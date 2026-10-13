@@ -8,6 +8,7 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 FIREBASE_SERVICE_ACCOUNT_PATH = os.getenv(
     "FIREBASE_SERVICE_ACCOUNT_PATH", "./service-account.json"
 )
+FIREBASE_STORAGE_BUCKET = os.getenv("FIREBASE_STORAGE_BUCKET", "")
 FIRESTORE_EMULATOR_HOST = os.getenv("FIRESTORE_EMULATOR_HOST", "")
 
 # Voice assistance (English + Hindi, zero typing)

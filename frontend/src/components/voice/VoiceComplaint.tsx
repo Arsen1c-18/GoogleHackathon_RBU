@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { apiPost } from "@/lib/api";
+import { uploadComplaintAudio } from "@/lib/storage";
 import {
   VOICE_LANGS,
   normalizeVoiceLang,
@@ -24,10 +25,14 @@ export default function VoiceComplaint() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [complaintId, setComplaintId] = useState("");
+  const [audioSaved, setAudioSaved] = useState<boolean | null>(null);
   const stopRef = useRef<(() => Promise<Blob>) | null>(null);
+  const audioRef = useRef<Blob | null>(null);
 
   const start = async () => {
     setError(null);
+    setAudioSaved(null);
+    audioRef.current = null;
     try {
       const { stop } = await recordMic(setLevel);
       stopRef.current = stop;
@@ -48,6 +53,8 @@ export default function VoiceComplaint() {
     try {
       const blob = await stopRef.current();
       stopRef.current = null;
+      audioRef.current = blob;
+      setAudioSaved(null);
       setLevel(0);
       const result = await transcribeAudio(blob, lang, getIdToken);
       setTranscript(result.text);
@@ -75,9 +82,21 @@ export default function VoiceComplaint() {
       } catch {
         structured = {};
       }
+      // Persist raw audio to Firebase Storage (owner-only path).
+      // Best-effort: a failed upload must never lose the transcript.
+      let audioUrl: string | undefined;
+      if (user?.uid && audioRef.current) {
+        try {
+          audioUrl = await uploadComplaintAudio(user.uid, audioRef.current);
+          setAudioSaved(true);
+        } catch {
+          setAudioSaved(false);
+        }
+      }
       const created = await apiPost<{ id: string }>("/api/complaints", {
         transcript_raw: transcript,
         language: lang,
+        audio_url: audioUrl,
         title: structured.title,
         category: structured.category,
         location: structured.location,
@@ -189,11 +208,20 @@ export default function VoiceComplaint() {
           <p className="text-lg font-semibold">
             {lang === "hi" ? "✅ दर्ज हो गई" : "✅ Filed"} #{complaintId.slice(0, 8)}
           </p>
+          {audioSaved === false && (
+            <p className="text-sm text-amber-600">
+              {lang === "hi"
+                ? "ऑडियो सहेजा नहीं जा सका — शिकायत टेक्स्ट से दर्ज है"
+                : "Audio could not be saved — complaint filed with transcript"}
+            </p>
+          )}
           <button
             onClick={() => {
               setStage("pick");
               setTranscript("");
               setComplaintId("");
+              setAudioSaved(null);
+              audioRef.current = null;
             }}
             className="rounded-full border px-5 py-2"
           >
