@@ -1,0 +1,20 @@
+# deps
+node_modules/
+frontend/.next/
+frontend/out/
+
+# env / secrets
+.env
+.env.local
+*.env.local
+backend/.venv/
+backend/__pycache__/
+backend/service-account.json
+backend/*.pyc
+
+# firebase
+.firebase/
+.firebaserc
+
+# OS
+.DS_Store

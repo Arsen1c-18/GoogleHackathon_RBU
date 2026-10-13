@@ -1,0 +1,12 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /complaints/{id} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow create: if request.auth != null
+        && request.resource.data.language in ['en', 'hi']
+        && request.resource.data.transcript_raw is string;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.uid;
+    }
+  }
+}
