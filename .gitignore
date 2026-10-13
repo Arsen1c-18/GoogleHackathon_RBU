@@ -18,3 +18,5 @@ backend/*.pyc
 
 # OS
 .DS_Store
+__pycache__/
+*.pyc
